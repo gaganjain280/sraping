@@ -11,16 +11,21 @@ class ScrappLogic{
         if($site==1){
          $getAccessSites  = $DecideFactory->createScraping("ScrapRossmann", $scrapingDetails);
          $category_list=array();
-         $category_list[0]['cat_url'] = "https://www.rossmann.de/de/haushalt/spuelmittel/c/olcat2_23";
-         $category_list[1]['cat_url'] = "https://www.rossmann.de/de/haushalt/putzmittel/c/olcat2_n_8";
-         $category_list[2]['cat_url'] = "https://www.rossmann.de/de/haushalt/putzutensilien/c/olcat2_21";
-         $category_list[3]['cat_url'] = "https://www.rossmann.de/de/haushalt/haushaltspapier/c/olcat2_25";
+
+
+         $category_list[0]['cat_url'] = "https://www.rossmann.de/de/haushalt/spuelmittel/c/olcat2_23?q=%3Arelevance&page=";
+         $category_list[1]['cat_url'] = "https://www.rossmann.de/de/haushalt/putzmittel/c/olcat2_n_8?q=%3Arelevance&page=";
+         $category_list[2]['cat_url'] = "https://www.rossmann.de/de/haushalt/putzutensilien/c/olcat2_21?q=%3Arelevance&page=";
+         $category_list[3]['cat_url'] = "https://www.rossmann.de/de/haushalt/haushaltspapier/c/olcat2_25?q=%3Arelevance&page=";
          foreach($category_list as $cat_cont) {
          $category_url = $cat_cont['cat_url'];
          $get_product_array= $getAccessSites->catagoryPageScrap($category_url);
+         // echo "<pre>";  print_r($get_product_array); echo "</pre>"; 
             foreach($get_product_array as $product_count_obj) {
-             $get_product_array=$product_count_obj['product_url']; 
+             $get_product_array=$product_count_obj; 
              $single_product_link="https://www.rossmann.de".$get_product_array;
+// print_r($single_product_link);
+             // exit;
              $getAccessSites->singlePageScrap($single_product_link);
             }
          }
@@ -44,11 +49,14 @@ class ScrapRossmann implements ScrapFunctions{
         $this->storeOderDetail = $oderDetails;
     }   
     public function catagoryPageScrap($category_url){
+       $product_url_array = array();
+    $pagecount=0;
+    while ($pagecount>-1) {
+    $category_url=$category_url.$pagecount;
     $cat_dom = file_get_html((string)$category_url, false);
-    $document = new \DOMDocument();
     $cat_container=$product_link=$getpro="";
     $i=$j=0;
-    $product_url_array = array();
+    // print_r($cat_dom);exit;
     foreach($cat_dom->find(".rm-category__products .rm-grid__wrapper .rm-grid__content]") as $cat_container) {
     foreach($cat_container->find(".rm-tile-product .rm-tile-product__advises") as $getpro) {
                $document = new \DOMDocument();
@@ -56,11 +64,21 @@ class ScrapRossmann implements ScrapFunctions{
                $document->loadHTML($getproo);
                $xpathx = new \DOMXPath($document);
                $product_linkk = $xpathx->evaluate("string(//a/@href)");
-                $product_url_array[$i]['product_url'] = $product_linkk;
+               $product_linkk = (string)$product_linkk;
+              // print_r($product_linkk);
+                if(in_array($product_linkk,$product_url_array)){
+                 echo "out";
+                 $pagecount=-1;
+                return $product_url_array;
+               }else{
+                array_push($product_url_array,$product_linkk);
+              }  
            $i++;           
     }
+   
    }
-return $product_url_array;
+$pagecount++;
+}
 }
     
     public function singlePageScrap($req_ulr){
